@@ -20,5 +20,8 @@ Thumbs.db
 target/site/
 target/jacoco.exec
 
+# Jqwik
+.jqwik-database
+
 # Claude
 .claude/
