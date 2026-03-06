@@ -1,9 +1,38 @@
-# Build Pipeline Refactoring Kata — Relatório TP2
+<div align="center">
 
-**Disciplina:** Engenharia Disciplinada de Software — DR4
+[![Instituto Infnet](https://img.shields.io/badge/Instituto-Infnet-red?style=for-the-badge)](https://www.infnet.edu.br)
+[![Curso](https://img.shields.io/badge/Curso-Engenharia_de_Software-blue?style=for-the-badge)](https://www.infnet.edu.br)
+[![Disciplina](https://img.shields.io/badge/Disciplina-Refatoração_(DR4)-green?style=for-the-badge)](https://www.infnet.edu.br)
+
+[![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org)
+[![Maven](https://img.shields.io/badge/Maven-3.9+-blue?logo=apachemaven)](https://maven.apache.org)
+[![JUnit](https://img.shields.io/badge/JUnit-5-green?logo=junit5&logoColor=white)](https://junit.org/junit5)
+[![Jqwik](https://img.shields.io/badge/Jqwik-1.9.2-purple)](https://jqwik.net)
+[![Status](https://img.shields.io/badge/Status-Completo-success)](https://github.com/andrebecker84/refactoringDR4_TP2)
+
+</div>
+
+# Documentação — Trabalho Prático 2 (DR4 — Refatoração)
+
+> **Build Pipeline Refactoring Kata — Refatoração progressiva aplicando Strategy Pattern, SOLID e testes automatizados**
+
 **Aluno:** André Luis Becker
+**Disciplina:** Engenharia Disciplinada de Software — DR4
 **Ano:** 2026
 **Repositório base:** [BuildPipeline Refactoring Kata — Emily Bache](https://github.com/emilybache/BuildPipeline-Refactoring-Kata)
+
+---
+
+## Índice
+
+- [Exercício 1 — Verificação Inicial e Testes Automatizados](#exercício-1--verificação-inicial-e-testes-automatizados)
+- [Exercício 2 — Reestruturando Métodos Complexos](#exercício-2--reestruturando-métodos-complexos)
+- [Exercício 3 — Expressividade e Clareza com Variáveis](#exercício-3--expressividade-e-clareza-com-variáveis)
+- [Exercício 4 — Melhorando Assinaturas e Encapsulamento](#exercício-4--melhorando-assinaturas-e-encapsulamento)
+- [Exercício 5 — Reorganizando Classes e Processos](#exercício-5--reorganizando-classes-e-processos)
+- [Resultados de Teste](#resultados-de-teste)
+- [Comparação: Antes e Depois](#comparação-antes-e-depois)
+- [Conclusão](#conclusão)
 
 ---
 
@@ -25,7 +54,7 @@ O repositório base foi clonado e analisado antes de qualquer alteração. A cla
 
 O método `run()` da classe `Pipeline` original apresentava três problemas simultâneos: múltiplas responsabilidades, longos blocos condicionais e baixa legibilidade. Com aproximadamente 40 linhas, misturava a lógica de execução de testes, deploy e notificação por e-mail em um único fluxo sem separação clara de propósito.
 
-**Código original — método com três responsabilidades misturadas:**
+### Código Original — método com três responsabilidades misturadas
 
 ```java
 public void run(Project project) {
@@ -48,7 +77,7 @@ public void run(Project project) {
 }
 ```
 
-**Refatoração aplicada — Extract Class + Extract Method:**
+### Refatoração — Extract Class + Extract Method
 
 Cada responsabilidade foi extraída para uma classe dedicada implementando a interface `EtapaExecucao`. O orquestrador `PipelineOrquestrador` coordena a sequência sem conhecer os detalhes de cada etapa:
 
@@ -67,7 +96,7 @@ private StatusExecucao prosseguirParaDeploy(StatusExecucao statusTeste, Projeto 
 
 O método `executar()` passou de 40 linhas para 3 linhas. A lógica de cada fase tornou-se testável de forma independente.
 
-**Dentro de `EtapaTeste`, o método auxiliar `executarTestes()` isola a decisão de resultado:**
+Dentro de `EtapaTeste`, o método auxiliar `executarTestes()` isola a decisão de resultado:
 
 ```java
 @Override
@@ -95,7 +124,7 @@ private StatusExecucao executarTestes() {
 
 O código original usava as Strings `"success"` e `"failure"` como valores de status passados entre blocos condicionais. Essa abordagem é silenciosamente frágil: um typo em qualquer comparação altera o comportamento sem erro de compilação.
 
-**Original — Primitive Obsession com Strings:**
+### Original — Primitive Obsession com Strings
 
 ```java
 String testStatus = "success";
@@ -105,7 +134,7 @@ String deploymentStatus;
 if ("success".equals(config.deploy())) { ... }
 ```
 
-**Refatorado — Enum `StatusExecucao` com métodos semânticos:**
+### Refatorado — Enum `StatusExecucao` com métodos semânticos
 
 ```java
 public enum StatusExecucao {
@@ -118,7 +147,7 @@ public enum StatusExecucao {
 
 O compilador garante que apenas valores válidos sejam usados. As condicionais passam a usar `statusTeste.isFalha()` em vez de `"failure".equals(statusTeste)`, tornando a intenção explícita.
 
-**Magic strings centralizadas como constantes nomeadas em `EtapaNotificacao`:**
+Magic strings centralizadas como constantes nomeadas em `EtapaNotificacao`:
 
 ```java
 private static final String MENSAGEM_SUCESSO = "Deploy concluído com sucesso";
@@ -128,8 +157,6 @@ private String resolverMensagem(StatusExecucao status) {
     return status.isSucesso() ? MENSAGEM_SUCESSO : MENSAGEM_FALHA;
 }
 ```
-
-As mensagens de e-mail deixaram de estar embutidas em condicionais aninhadas e passaram a existir em um único ponto nomeado, facilitando manutenção e localização.
 
 ---
 
@@ -144,7 +171,7 @@ if ("success".equals(config.deploy())) { ... }
 if (config.sendEmailSummary()) { ... }
 ```
 
-**Refatorado — Introduce Parameter Object com `Configuracao` tipada:**
+### Refatorado — Introduce Parameter Object com `Configuracao` tipada
 
 ```java
 public class Configuracao {
@@ -160,7 +187,7 @@ public class Configuracao {
 
 Os parâmetros booleanos com nomes descritivos eliminam as comparações de String no código de negócio. O uso no ponto de chamada torna-se autoexplicativo: `configuracao.testesPassaram()`.
 
-**Encapsulamento em `Projeto` com construtores nomeados e Fail-Fast:**
+### Encapsulamento em `Projeto` com construtores nomeados e Fail-Fast
 
 ```java
 public static Projeto comTestes(String nome)  { return new Projeto(nome, true);  }
@@ -182,7 +209,7 @@ Os campos são `private final`, sem setters. O objeto nasce sempre válido. As i
 
 O código original concentrava quatro responsabilidades em uma única classe `Pipeline`: decisão de execução de testes, lógica de deploy, formatação de mensagens de e-mail e envio de notificação. A reorganização distribuiu essas responsabilidades em classes especializadas com dependências claras.
 
-**Estrutura resultante:**
+### Estrutura resultante
 
 ```
 Pipeline (original)           →   PipelineOrquestrador
@@ -195,7 +222,7 @@ Pipeline (original)           →   PipelineOrquestrador
   interface Emailer           →   Notificador  (renomeada e generalizada)
 ```
 
-**Strategy Pattern — `EtapaExecucao` como contrato substituível:**
+### Strategy Pattern — `EtapaExecucao` como contrato substituível
 
 ```java
 public interface EtapaExecucao {
@@ -205,7 +232,7 @@ public interface EtapaExecucao {
 
 `EtapaTeste` e `EtapaDeploy` implementam esse contrato de forma independente. O orquestrador depende apenas da interface, o que permite trocar qualquer implementação sem modificar o código existente — respeitando OCP.
 
-**Análise final de SOLID:**
+### Análise SOLID
 
 | Princípio | Aplicação |
 |---|---|
@@ -220,7 +247,7 @@ public interface EtapaExecucao {
 ## Resultados de Teste
 
 ```
-PipelineOrquestradorTest   — 9 testes   — JUnit 5 + Mockito
+PipelineOrquestradorTest   — 9 testes   — JUnit 5 + Mockito + Hamcrest
 PipelinePropriedadesTest   — 5 propriedades — Jqwik
 
 Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
@@ -228,11 +255,14 @@ BUILD SUCCESS
 ```
 
 **Propriedades Jqwik validadas para toda combinação de entrada:**
-- Com notificação desabilitada, nenhuma mensagem é enviada
-- Com notificação habilitada, exatamente uma mensagem é sempre enviada
-- Quando testes falham, a mensagem nunca indica sucesso
-- Quando o deploy falha, a mensagem nunca indica sucesso
-- Quando tudo passa, a mensagem indica sucesso
+
+| Propriedade | Invariante validado |
+|---|---|
+| `notificacaoDesabilitada_nuncaEnviaMensagem` | Nenhum envio quando desabilitado, para toda combinação de estados |
+| `notificacaoHabilitada_semprEnviaExatamenteUmaMensagem` | Sempre exatamente 1 mensagem quando habilitado |
+| `testesFalham_mensagemEnviadaNuncaIndicaSucesso` | Falha de teste nunca resulta em mensagem de sucesso |
+| `deployFalha_mensagemEnviadaNuncaIndicaSucesso` | Falha de deploy nunca resulta em mensagem de sucesso |
+| `testesPassam_deployPassam_mensagemSempre_indicaSucesso` | Fluxo completo de sucesso sempre notifica com sucesso |
 
 ---
 
@@ -252,3 +282,19 @@ BUILD SUCCESS
 ## Conclusão
 
 A refatoração transforma um método monolítico em um conjunto de classes coesas com contrato claro. O comportamento externo permanece idêntico — validado pelos testes determinísticos e pelas propriedades Jqwik. A arquitetura resultante é extensível: novas etapas de pipeline são adicionadas criando uma nova classe que implementa `EtapaExecucao`, sem modificar nenhum código existente.
+
+---
+
+<div align="center">
+
+<a href="images/card.svg">
+  <img src="images/card.svg" width="360" alt="André Luis Becker - Software Engineer">
+</a>
+
+<p><em>Instituto Infnet — Engenharia de Software — 2026.</em></p>
+
+<p>
+  <a href="../LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?logo=readme&logoColor=white" alt="MIT License"></a>
+</p>
+
+</div>
